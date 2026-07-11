@@ -48,6 +48,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ## Endpoints
 
 - `GET /api/v1/health`
+- `POST /api/v1/ai/chat/messages`
 - `POST /api/v1/users`
 - `GET /api/v1/users`
 - `GET /api/v1/users/{id}`
