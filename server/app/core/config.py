@@ -1,7 +1,7 @@
 from functools import lru_cache
+import json
 from typing import Literal
 
-from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,16 +24,18 @@ class Settings(BaseSettings):
     DB_AUTO_CREATE: bool = False
     GROQ_API_KEY: str | None = None
 
-    CORS_ORIGINS: list[str] = Field(
-        default_factory=lambda: ["http://localhost:3000", "http://localhost:5173"]
-    )
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
 
-    @field_validator("CORS_ORIGINS", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, value: str | list[str]) -> list[str]:
-        if isinstance(value, str):
-            return [origin.strip() for origin in value.split(",") if origin.strip()]
-        return value
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Parse CORS origins from a comma-separated string or a JSON array."""
+        raw = (self.CORS_ORIGINS or "").strip()
+        if raw.startswith("[") and raw.endswith("]"):
+            try:
+                return [str(item).strip() for item in json.loads(raw) if str(item).strip()]
+            except json.JSONDecodeError:
+                pass
+        return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
 @lru_cache(maxsize=1)
