@@ -12,6 +12,8 @@ __pycache__/
 .env.*
 server/.env
 client/.env
+server/.env.*
+client/.env.*
 
 # Editor / OS
 .vscode/

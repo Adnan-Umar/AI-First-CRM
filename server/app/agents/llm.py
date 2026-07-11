@@ -2,7 +2,7 @@ from langchain_groq import ChatGroq
 
 from app.core.config import get_settings
 
-DEFAULT_MODEL = "gemma2-9b-it"
+DEFAULT_MODEL = "llama-3.3-70b-versatile"
 DEFAULT_TEMPERATURE = 0.1
 
 
