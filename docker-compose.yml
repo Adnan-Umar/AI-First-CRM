@@ -1,0 +1,52 @@
+# AI-First CRM — local deployment with Docker Compose.
+# Copies variables from a root .env file if present (see .env.example).
+# Bring everything up with:  docker compose up --build
+# App:  http://localhost:5173   API: http://localhost:8000/docs
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-crm_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-crm_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-ai_first_crm}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-crm_user} -d ${POSTGRES_DB:-ai_first_crm}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  server:
+    build: ./server
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-crm_user}:${POSTGRES_PASSWORD:-crm_pass}@db:5432/${POSTGRES_DB:-ai_first_crm}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      DB_AUTO_CREATE: "true"
+      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      APP_PORT: "8000"
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  client:
+    build:
+      context: ./client
+      args:
+        # URL the browser uses to reach the API (host-published backend port).
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
+    ports:
+      - "5173:80"
+    depends_on:
+      - server
+    restart: unless-stopped
+
+volumes:
+  pgdata:
