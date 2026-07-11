@@ -2,12 +2,15 @@ from langchain_groq import ChatGroq
 
 from app.core.config import get_settings
 
-# Mandated primary model for the assignment (Groq).
-DEFAULT_MODEL = "gemma2-9b-it"
-# Optional larger model used for long-form context generation (follow-up plans,
-# summaries) where a bigger context window helps quality.
+# Larger model used for long-form context generation (follow-up plans, summaries)
+# where a bigger context window helps quality. Override with GROQ_CONTEXT_MODEL.
 CONTEXT_MODEL = "llama-3.3-70b-versatile"
 DEFAULT_TEMPERATURE = 0.1
+
+# The primary model is read from settings (GROQ_MODEL), defaulting to the
+# assignment-mandated gemma2-9b-it so the model can be swapped without code changes.
+def get_default_model() -> str:
+    return get_settings().GROQ_MODEL or "gemma2-9b-it"
 
 
 def get_groq_api_key() -> str | None:
@@ -23,7 +26,7 @@ def create_llm(
     if not api_key:
         raise ValueError("GROQ_API_KEY is not configured.")
     return ChatGroq(
-        model=model or DEFAULT_MODEL,
+        model=model or get_default_model(),
         groq_api_key=api_key,
         temperature=temperature,
     )
