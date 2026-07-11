@@ -1,7 +1,7 @@
 from typing import Any
 
 from app.agents.helpers import find_interaction, format_interaction_record
-from app.agents.llm import create_llm, create_structured_llm, get_groq_api_key
+from app.agents.llm import CONTEXT_MODEL, create_llm, create_structured_llm, get_groq_api_key
 from app.agents.schemas import FollowUpPlanOutput
 from app.agents.state import AgentState
 
@@ -56,7 +56,7 @@ def follow_up_plan_tool(state: AgentState) -> dict[str, Any]:
         context = _build_context_from_form(state["current_form"])
 
     try:
-        llm = create_llm(temperature=0.3)
+        llm = create_llm(temperature=0.3, model=CONTEXT_MODEL)
         plan_response = llm.invoke(
             [
                 (

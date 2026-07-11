@@ -15,6 +15,10 @@ client/.env
 server/.env.*
 client/.env.*
 
+# Keep tracked template/env examples (no secrets)
+!.env.example
+!server/.env.example
+
 # Editor / OS
 .vscode/
 .idea/

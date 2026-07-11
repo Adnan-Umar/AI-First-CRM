@@ -110,8 +110,10 @@ use Alembic.
 
 ## Groq API key setup
 
-The LangGraph agent uses Groq (`langchain-groq`) with the model
-`llama-3.3-70b-versatile`.
+The LangGraph agent uses Groq (`langchain-groq`). The mandated primary model is
+`gemma2-9b-it` (set as `DEFAULT_MODEL` in `server/app/agents/llm.py`). The larger
+`llama-3.3-70b-versatile` model is used only for long-form context generation
+(follow-up plans and summaries) where its bigger context window helps quality.
 
 1. Get a key from <https://console.groq.com/keys>.
 2. Add it to `server/.env`:
@@ -301,9 +303,9 @@ Each response's `intent` field should match the tool name above.
 
 **1. `Error code: 400` from Groq on every AI call**
 - Cause: deprecated default model. Fixed — `server/app/agents/llm.py` now uses
-  `llama-3.3-70b-versatile`. If you still see it, set `DEFAULT_MODEL` in
-  `llm.py` to any currently available Groq model (`llama-3.1-8b-instant`, etc.)
-  and restart the backend.
+  `gemma2-9b-it` as the primary model (with `llama-3.3-70b-versatile` for
+  context-heavy generation). If you still see it, set `DEFAULT_MODEL` /
+  `CONTEXT_MODEL` in `llm.py` to any currently available Groq model and restart
 
 **2. CORS error in the browser console (`blocked by CORS policy`)**
 - Cause: frontend opened via `127.0.0.1` but only `localhost` was allowed.

@@ -1,7 +1,7 @@
 from typing import Any
 
 from app.agents.helpers import find_interaction, format_interaction_record
-from app.agents.llm import create_llm, create_structured_llm, get_groq_api_key
+from app.agents.llm import CONTEXT_MODEL, create_llm, create_structured_llm, get_groq_api_key
 from app.agents.schemas import SummarizeInteractionOutput
 from app.agents.state import AgentState
 
@@ -61,7 +61,7 @@ def summarize_interaction_tool(state: AgentState) -> dict[str, Any]:
         context = _build_context_from_form(state["current_form"])
 
     try:
-        llm = create_llm()
+        llm = create_llm(model=CONTEXT_MODEL)
         summary_response = llm.invoke(
             [
                 (
