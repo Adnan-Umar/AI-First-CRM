@@ -7,10 +7,11 @@ from app.core.config import get_settings
 CONTEXT_MODEL = "llama-3.3-70b-versatile"
 DEFAULT_TEMPERATURE = 0.1
 
-# The primary model is read from settings (GROQ_MODEL), defaulting to the
-# assignment-mandated gemma2-9b-it so the model can be swapped without code changes.
+# The primary model is read from settings (GROQ_MODEL). gemma2-9b-it was
+# decommissioned by Groq, so the default is now llama-3.3-70b-versatile
+# (an assignment-sanctioned alternative). Swappable via the GROQ_MODEL env var.
 def get_default_model() -> str:
-    return get_settings().GROQ_MODEL or "gemma2-9b-it"
+    return get_settings().GROQ_MODEL or "llama-3.3-70b-versatile"
 
 
 def get_groq_api_key() -> str | None:

@@ -16,7 +16,7 @@ LLMs.
 | Frontend   | React 19 + Redux Toolkit (state) + MUI + Vite |
 | Backend    | Python + FastAPI |
 | AI Agent   | LangGraph (`StateGraph`) |
-| LLM        | Groq — **`gemma2-9b-it`** (primary, mandated) + `llama-3.3-70b-versatile` for long-form context |
+| LLM        | Groq — **`llama-3.3-70b-versatile`** (default) + `gemma2-9b-it` (decommissioned by Groq; configurable via `GROQ_MODEL`) |
 | Database   | PostgreSQL (SQLAlchemy ORM + Alembic) |
 | Font       | Google **Inter** (`@fontsource/inter`) |
 
@@ -46,7 +46,7 @@ flowchart TD
         REPO["Repositories (DB access)"]
     end
     subgraph LLM["Groq Cloud"]
-        G1["gemma2-9b-it<br/>routing + extraction"]
+        G1["llama-3.3-70b-versatile<br/>routing + extraction"]
         G2["llama-3.3-70b-versatile<br/>long-form context"]
     end
     subgraph Data["PostgreSQL"]
@@ -68,8 +68,8 @@ flowchart TD
 2. The React/Redux frontend sends REST calls to the **FastAPI** backend.
 3. Chat messages go through the **AI Service** into the **LangGraph agent**, which
    routes the message to one of five tool nodes.
-4. Tools call **Groq** (`gemma2-9b-it` for routing/extraction, `llama-3.3-70b-versatile`
-   for summaries/plans) and read/write the database via repositories.
+4. Tools call **Groq** (`llama-3.3-70b-versatile` for routing/extraction and context;
+   `gemma2-9b-it` was decommissioned by Groq) and read/write the database via repositories.
 5. All interaction data is persisted in **PostgreSQL**.
 
 Both services are containerized (see `server/Dockerfile`, `client/Dockerfile`,
@@ -121,7 +121,7 @@ routing so the app still runs.
 
 | Tool | Purpose | How it works |
 |------|---------|--------------|
-| **1. Log Interaction** *(required)* | Capture a new HCP visit | Uses the LLM (`gemma2-9b-it`) with structured output to extract `doctor_id`, `visit_type`, `date`, `products_discussed`, `notes`, `follow_up_date`, `objective`, `summary`, `outcome`. Merges into the current form and auto-saves when doctor + date resolve. LLM performs summarization/entity extraction. |
+| **1. Log Interaction** *(required)* | Capture a new HCP visit | Uses the LLM (`llama-3.3-70b-versatile`) with structured output to extract `doctor_id`, `visit_type`, `date`, `products_discussed`, `notes`, `follow_up_date`, `objective`, `summary`, `outcome`. Merges into the current form and auto-saves when doctor + date resolve. LLM performs summarization/entity extraction. |
 | **2. Edit Interaction** *(required)* | Modify a logged interaction | LLM identifies the target interaction (by `interaction_id`, doctor name, or date) and the fields to change; the tool applies only the requested updates via the interaction repository and returns the refreshed record. |
 | **3. Search Interaction History** | Find past visits | LLM extracts filters (doctor, visit type, date range); the tool queries the repository and returns matching interactions. |
 | **4. Generate Follow-up Plan** | Next-step coaching | Locates the interaction/doctor, then the LLM (`llama-3.3-70b-versatile`) produces objectives, talking points, channel/timing, objections, and success metrics. |
@@ -167,7 +167,7 @@ python -m app.db.seed               # optional demo data
 python -m uvicorn app.main:app --reload --port 8000
 ```
 Set `GROQ_API_KEY` in `server/.env` to enable real LLM behavior
-(`gemma2-9b-it`). Without it the agent runs in demo (keyword) mode.
+(`llama-3.3-70b-versatile`). Without it the agent runs in demo (keyword) mode.
 
 ### Frontend
 ```powershell
@@ -226,7 +226,7 @@ images to Docker Hub, tagged `latest` and by commit SHA. Required repo secrets:
 ## Notes on the assignment requirements
 
 - **LangGraph + LLM are mandatory** — satisfied: a compiled `StateGraph` agent
-  calls Groq's `gemma2-9b-it` (and `llama-3.3-70b-versatile` for context).
+  calls Groq's `llama-3.3-70b-versatile` (the `gemma2-9b-it` model named in the brief was decommissioned by Groq).
 - **Structured form OR chat** — satisfied on the Log Interaction Screen.
 - **≥5 tools incl. Log + Edit Interaction** — satisfied (5 tools, both required).
 - **Postgres SQL** — satisfied (MySQL/Postgres allowed).

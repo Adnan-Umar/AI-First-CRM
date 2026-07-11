@@ -8,7 +8,7 @@ from app.agents.schemas import INTENT_LABELS
 
 # gemma2-9b-it (and llama-3.3-70b-versatile) are text-only; Groq rejects image input.
 TEXT_ONLY_REPLY = (
-    "This assistant is text-only (powered by gemma2-9b-it, which has no vision), "
+    "This assistant is text-only (powered by a Groq model with no vision capability), "
     "so I can't read images. Please describe the image in words and I'll capture it for you."
 )
 

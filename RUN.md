@@ -110,10 +110,13 @@ use Alembic.
 
 ## Groq API key setup
 
-The LangGraph agent uses Groq (`langchain-groq`). The mandated primary model is
-`gemma2-9b-it` (set as `DEFAULT_MODEL` in `server/app/agents/llm.py`). The larger
-`llama-3.3-70b-versatile` model is used only for long-form context generation
-(follow-up plans and summaries) where its bigger context window helps quality.
+The LangGraph agent uses Groq (`langchain-groq`). The default model is
+`llama-3.3-70b-versatile` (configurable via `GROQ_MODEL` in `server/.env`).
+`gemma2-9b-it` — the model named in the assignment brief — was **decommissioned
+by Groq**, so it can no longer be used; `llama-3.3-70b-versatile` is the
+assignment-sanctioned alternative ("you may also consider llama-3.3-70b-versatile
+for context"). It is used for routing, extraction, and long-form context
+generation (follow-up plans and summaries).
 
 1. Get a key from <https://console.groq.com/keys>.
 2. Add it to `server/.env`:
@@ -302,10 +305,11 @@ Each response's `intent` field should match the tool name above.
 ## Common errors and fixes
 
 **1. `Error code: 400` from Groq on every AI call**
-- Cause: deprecated default model. Fixed — `server/app/agents/llm.py` now uses
-  `gemma2-9b-it` as the primary model (with `llama-3.3-70b-versatile` for
-  context-heavy generation). If you still see it, set `DEFAULT_MODEL` /
-  `CONTEXT_MODEL` in `llm.py` to any currently available Groq model and restart
+- Cause: deprecated model. Groq decommissioned `gemma2-9b-it`. Fixed — the default
+  is now `llama-3.3-70b-versatile` (set via `GROQ_MODEL` in `server/.env`; falls
+  back to it in `server/app/agents/llm.py`). If you still see a `model_decommissioned`
+  error, set `GROQ_MODEL` to any currently available Groq model (e.g.
+  `llama-3.1-8b-instant`) and restart the backend.
 
 **2. CORS error in the browser console (`blocked by CORS policy`)**
 - Cause: frontend opened via `127.0.0.1` but only `localhost` was allowed.
