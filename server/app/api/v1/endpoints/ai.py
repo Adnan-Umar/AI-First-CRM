@@ -1,7 +1,11 @@
 from datetime import date
+from typing import Any
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
+
+from app.api.deps import DBSession
+from app.services.ai_service import process_chat_message
 
 router = APIRouter()
 
@@ -18,23 +22,23 @@ class ChatMessageRequest(BaseModel):
 
 class ChatMessageResponse(BaseModel):
     reply: str
+    extracted_fields: dict[str, Any] | None = None
+    intent: str | None = None
 
 
 @router.post("/chat/messages", response_model=ChatMessageResponse)
-def send_chat_message(payload: ChatMessageRequest) -> ChatMessageResponse:
-    products = ", ".join(payload.products_discussed) if payload.products_discussed else "none yet"
-    visit = payload.visit_type or "Not specified"
-    interaction_date = payload.interaction_date.isoformat() if payload.interaction_date else "Not set"
-    follow_up_date = payload.follow_up_date.isoformat() if payload.follow_up_date else "Not set"
+def send_chat_message(payload: ChatMessageRequest, db: DBSession) -> ChatMessageResponse:
+    # Convert incoming request format to current form dictionary expected by the service
+    current_form = {
+        "doctorId": payload.doctor_id or "",
+        "visitType": payload.visit_type or "In-person",
+        "date": payload.interaction_date.isoformat() if payload.interaction_date else "",
+        "productsDiscussed": ", ".join(payload.products_discussed) if payload.products_discussed else "",
+        "notes": payload.notes or "",
+        "followUpDate": payload.follow_up_date.isoformat() if payload.follow_up_date else "",
+    }
 
-    reply = (
-        "Captured. Here is the structured draft:\n"
-        f"- Doctor: {payload.doctor_id or 'Not selected'}\n"
-        f"- Visit type: {visit}\n"
-        f"- Date: {interaction_date}\n"
-        f"- Products discussed: {products}\n"
-        f"- Follow-up date: {follow_up_date}\n"
-        f"- Notes summary: {(payload.notes or payload.message).strip()[:240]}"
-    )
-    return ChatMessageResponse(reply=reply)
+    reply, extracted_fields = process_chat_message(db, payload.message, current_form)
+    intent = extracted_fields.get("intent") if extracted_fields else None
 
+    return ChatMessageResponse(reply=reply, extracted_fields=extracted_fields, intent=intent)

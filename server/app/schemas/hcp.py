@@ -1,6 +1,7 @@
+from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, model_validator
 
 from app.schemas.common import Timestamps, UUIDModel
 
@@ -30,5 +31,15 @@ class HCPUpdate(BaseModel):
 
 
 class HCPRead(HCPBase, UUIDModel, Timestamps):
-    pass
+    full_name: str
+    organization_name: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def assemble_custom_fields(cls, data: Any) -> Any:
+        if hasattr(data, "first_name") and hasattr(data, "last_name"):
+            data.full_name = f"{data.first_name} {data.last_name}"
+        if hasattr(data, "organization") and data.organization:
+            data.organization_name = data.organization.name
+        return data
 

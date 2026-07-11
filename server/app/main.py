@@ -7,7 +7,7 @@ from app.api.v1.api import api_router
 from app.core.config import get_settings
 from app.db.base import Base
 from app.db.session import engine
-from app.models import HealthcareProfessional, Organization, User  # noqa: F401
+from app.models import HealthcareProfessional, Interaction, Organization, User  # noqa: F401
 
 settings = get_settings()
 
@@ -34,6 +34,7 @@ def create_application() -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(api_router, prefix=settings.API_V1_PREFIX)
+
     return app
 
 

@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+client/dist/
+server/.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Environment / secrets
+.env
+.env.*
+server/.env
+client/.env
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

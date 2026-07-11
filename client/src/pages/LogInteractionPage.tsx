@@ -5,21 +5,28 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
+  CircularProgress,
   Divider,
   Grid,
   MenuItem,
-  ToggleButton,
-  ToggleButtonGroup,
+  Snackbar,
   Stack,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from '@mui/material'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import { useAppDispatch, useAppSelector } from '../app/hooks'
 import { PageHeader } from '../components/PageHeader'
+import { fetchHCPs } from '../features/hcp/hcpSlice'
 import {
   addUserMessage,
+  resetSave,
+  saveInteraction,
   sendChatMessage,
   setDate,
   setDoctorId,
@@ -33,9 +40,30 @@ import type { InteractionMode, VisitType } from '../features/logInteraction/type
 
 export function LogInteractionPage() {
   const dispatch = useAppDispatch()
+  const navigate = useNavigate()
   const [message, setMessage] = useState('')
   const hcps = useAppSelector((state) => state.hcps.records)
-  const { mode, form, chat } = useAppSelector((state) => state.logInteraction)
+  const hcpsLoading = useAppSelector((state) => state.hcps.loading)
+  const { mode, form, chat, save } = useAppSelector((state) => state.logInteraction)
+
+  // Load HCPs on mount and default the doctor selection
+  useEffect(() => {
+    dispatch(fetchHCPs())
+  }, [dispatch])
+
+  useEffect(() => {
+    if (!form.doctorId && hcps.length > 0) {
+      dispatch(setDoctorId(hcps[0].id))
+    }
+  }, [hcps, form.doctorId, dispatch])
+
+  // Navigate to history when save succeeds
+  useEffect(() => {
+    if (save.savedId) {
+      navigate('/interaction-history')
+      dispatch(resetSave())
+    }
+  }, [save.savedId, navigate, dispatch])
 
   const handleSendMessage = () => {
     const trimmed = message.trim()
@@ -45,6 +73,10 @@ export function LogInteractionPage() {
     dispatch(addUserMessage(trimmed))
     dispatch(sendChatMessage(trimmed))
     setMessage('')
+  }
+
+  const handleSave = () => {
+    dispatch(saveInteraction())
   }
 
   return (
@@ -80,12 +112,24 @@ export function LogInteractionPage() {
                   label="Doctor"
                   value={form.doctorId}
                   onChange={(event) => dispatch(setDoctorId(event.target.value))}
+                  disabled={hcpsLoading}
+                  slotProps={{
+                    select: {
+                      displayEmpty: true,
+                    },
+                  }}
                 >
-                  {hcps.map((hcp) => (
-                    <MenuItem key={hcp.id} value={hcp.id}>
-                      {hcp.fullName}
+                  {hcpsLoading ? (
+                    <MenuItem value="" disabled>
+                      Loading doctors…
                     </MenuItem>
-                  ))}
+                  ) : (
+                    hcps.map((hcp) => (
+                      <MenuItem key={hcp.id} value={hcp.id}>
+                        {hcp.fullName}
+                      </MenuItem>
+                    ))
+                  )}
                 </TextField>
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -141,11 +185,33 @@ export function LogInteractionPage() {
                 />
               </Grid>
               <Grid size={{ xs: 12 }}>
-                <Button variant="contained">Save Interaction</Button>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Button
+                    variant="contained"
+                    onClick={handleSave}
+                    disabled={save.saving || !form.doctorId || !form.date}
+                    startIcon={save.saving ? <CircularProgress size={16} color="inherit" /> : undefined}
+                  >
+                    {save.saving ? 'Saving…' : 'Save Interaction'}
+                  </Button>
+                  {save.error && (
+                    <Typography variant="body2" color="error">
+                      {save.error}
+                    </Typography>
+                  )}
+                </Box>
               </Grid>
             </Grid>
           ) : (
             <Stack spacing={2}>
+              {chat.lastIntentLabel && (
+                <Chip
+                  size="small"
+                  label={`Tool: ${chat.lastIntentLabel}`}
+                  color={chat.lastIntent === 'log_interaction' ? 'primary' : 'default'}
+                  sx={{ alignSelf: 'flex-start' }}
+                />
+              )}
               <Box
                 sx={{
                   border: '1px solid',
@@ -154,8 +220,25 @@ export function LogInteractionPage() {
                   p: 2,
                   minHeight: 220,
                   bgcolor: 'grey.50',
+                  position: 'relative',
                 }}
               >
+                {chat.sending && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      inset: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      bgcolor: 'rgba(255,255,255,0.7)',
+                      borderRadius: 2,
+                      zIndex: 1,
+                    }}
+                  >
+                    <CircularProgress size={28} />
+                  </Box>
+                )}
                 <Stack spacing={1.5}>
                   {chat.messages.map((item) => (
                     <Box
@@ -172,20 +255,33 @@ export function LogInteractionPage() {
                         borderColor: 'divider',
                       }}
                     >
-                      <Typography variant="body2">{item.content}</Typography>
+                      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                        {item.content}
+                      </Typography>
                     </Box>
                   ))}
                 </Stack>
               </Box>
+              {save.savedId && mode === 'chat' && (
+                <Alert severity="success" variant="outlined">
+                  Interaction saved to the database. Redirecting to history…
+                </Alert>
+              )}
               {chat.error && (
                 <Alert severity="error" variant="outlined">
                   {chat.error}
+                </Alert>
+              )}
+              {save.error && (
+                <Alert severity="warning" variant="outlined">
+                  {save.error}
                 </Alert>
               )}
               <Stack direction="row" spacing={1}>
                 <TextField
                   fullWidth
                   label="Type your message"
+                  placeholder="e.g. Met Dr. Khan today to discuss CardioPlus…"
                   value={message}
                   onChange={(event) => setMessage(event.target.value)}
                   onKeyDown={(event) => {
@@ -194,20 +290,42 @@ export function LogInteractionPage() {
                       handleSendMessage()
                     }
                   }}
+                  disabled={chat.sending}
                 />
                 <Button
                   variant="contained"
-                  endIcon={<SendIcon />}
+                  endIcon={chat.sending ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
                   onClick={handleSendMessage}
-                  disabled={chat.sending}
+                  disabled={chat.sending || save.saving}
                 >
-                  Send
+                  {chat.sending ? 'Processing…' : 'Send'}
                 </Button>
               </Stack>
+              <Divider />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                <Button
+                  variant="outlined"
+                  onClick={handleSave}
+                  disabled={save.saving || chat.sending || !form.doctorId || !form.date}
+                  startIcon={save.saving ? <CircularProgress size={16} color="inherit" /> : undefined}
+                >
+                  {save.saving ? 'Saving…' : 'Save Interaction Manually'}
+                </Button>
+                <Typography variant="caption" color="text.secondary">
+                  Log Interaction messages are auto-saved when doctor and date are extracted.
+                </Typography>
+              </Box>
             </Stack>
           )}
         </CardContent>
       </Card>
+
+      <Snackbar
+        open={Boolean(save.error)}
+        autoHideDuration={4000}
+        onClose={() => dispatch(resetSave())}
+        message={save.error}
+      />
     </>
   )
 }

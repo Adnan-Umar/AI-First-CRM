@@ -9,6 +9,9 @@ export interface InteractionFormState {
   productsDiscussed: string
   notes: string
   followUpDate: string
+  objective: string
+  summary: string
+  outcome: string
 }
 
 export interface ChatMessage {
@@ -18,3 +21,22 @@ export interface ChatMessage {
   createdAt: string
 }
 
+export interface ExtractedFields {
+  doctorId?: string
+  visitType?: string
+  date?: string
+  productsDiscussed?: string
+  notes?: string
+  followUpDate?: string
+  objective?: string
+  summary?: string
+  outcome?: string
+  intent?: string
+  intentLabel?: string
+}
+
+export interface ChatApiResponse {
+  reply: string
+  extracted_fields: ExtractedFields | null
+  intent: string | null
+}

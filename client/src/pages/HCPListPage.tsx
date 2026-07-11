@@ -9,14 +9,20 @@ import {
   TableRow,
   TextField,
 } from '@mui/material'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
-import { useAppSelector } from '../app/hooks'
+import { useAppDispatch, useAppSelector } from '../app/hooks'
 import { PageHeader } from '../components/PageHeader'
+import { fetchHCPs } from '../features/hcp/hcpSlice'
 
 export function HCPListPage() {
+  const dispatch = useAppDispatch()
   const [search, setSearch] = useState('')
   const hcps = useAppSelector((state) => state.hcps.records)
+
+  useEffect(() => {
+    dispatch(fetchHCPs())
+  }, [dispatch])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()

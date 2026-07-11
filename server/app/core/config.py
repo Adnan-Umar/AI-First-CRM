@@ -22,6 +22,7 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = "postgresql+psycopg://crm_user:crm_pass@localhost:5432/ai_first_crm"
     DB_AUTO_CREATE: bool = False
+    GROQ_API_KEY: str | None = None
 
     CORS_ORIGINS: list[str] = Field(
         default_factory=lambda: ["http://localhost:3000", "http://localhost:5173"]
